@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assignment Step Splitter & Prompt Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Body */
+body { 
+  font-family:'Inter',sans-serif; 
+  margin:0; 
+  background: linear-gradient(120deg,#a1c4fd,#c2e9fb); 
+  color:#333; 
+}
+
+/* Container */
+.container { 
+  max-width:900px; 
+  margin:30px auto; 
+  background:#fff; 
+  padding:25px 35px; 
+  border-radius:20px; 
+  box-shadow:0 10px 25px rgba(0,0,0,0.1); 
+}
+
+/* Heading */
+h1 { 
+  text-align:center; 
+  color:#1d4ed8; 
+  margin-top:0; 
+  font-weight:700;
+  letter-spacing:1px;
+}
+
+/* Labels */
+label { 
+  font-weight:600; 
+  margin-top:12px; 
+  display:block; 
+  color:#1f2937;
+}
+
+/* Inputs & textareas */
+textarea, input, select { 
+  width:100%; 
+  padding:12px; 
+  margin:6px 0; 
+  box-sizing:border-box; 
+  border-radius:12px; 
+  border:1px solid #ccc; 
+  font-family:'Inter',sans-serif; 
+  font-size:14px; 
+  transition:all 0.2s;
+}
+textarea#assignment { height:200px; font-family:'Inter',sans-serif; background:#f0f9ff;}
+textarea.prompt { height:130px; font-family:'Inter',monospace; background:#f9fafb; border:2px solid #3b82f6;}
+
+/* Inputs focus */
+textarea:focus, input:focus, select:focus {
+  outline:none;
+  border-color:#3b82f6;
+  box-shadow:0 0 10px rgba(59,130,246,0.3);
+}
+
+/* Buttons */
+button { 
+  padding:10px 18px; 
+  margin:4px 0; 
+  font-weight:700; 
+  border-radius:14px; 
+  cursor:pointer; 
+  transition:all 0.3s; 
+  font-size:14px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Blue buttons */
+button.blue { 
+  background: linear-gradient(135deg,#3b82f6,#60a5fa); 
+  color:white; 
+  border:none; 
+}
+button.blue:hover { 
+  transform:translateY(-2px); 
+  box-shadow:0 6px 18px rgba(0,0,0,0.15);
+}
+
+/* White outlined buttons */
+button.white { 
+  background:white; 
+  color:#1f2937; 
+  border:2px solid #1f2937; 
+}
+button.white:hover { 
+  background:#f3f4f6; 
+  transform:translateY(-2px);
+}
+
+/* Button rows */
+.button-row { 
+  display:flex; 
+  justify-content:center; /* center alignment */
+  gap:12px; 
+  flex-wrap:wrap; 
+  margin-top:10px; 
+}
+
+/* Table */
+table { 
+  width:100%; 
+  border-collapse:collapse; 
+  margin-top:25px; 
+  border-radius:14px; 
+  overflow:hidden; 
+  box-shadow:0 4px 15px rgba(0,0,0,0.05);
+}
+th, td { 
+  padding:14px; 
+  text-align:left; 
+  vertical-align:top; 
+}
+th { 
+  background:#3b82f6; 
+  color:white; 
+  font-weight:700; 
+}
+tbody tr:nth-child(even) { background:#f0f9ff; }
+.status-Not\ started { background:#fef2f2; color:#b91c1c; }
+.status-In\ progress { background:#fff7ed; color:#c2410c; }
+.status-Done { background:#dcfce7; color:#16a34a; }
+
+/* Autocomplete dropdown */
+.autocomplete-suggestions { position:relative; }
+.autocomplete-list {
+  position:absolute;
+  z-index:999;
+  background:#fff;
+  border:1px solid #ccc;
+  border-radius:8px;
+  width:100%;
+  max-height:150px;
+  overflow-y:auto;
+  box-shadow:0 6px 20px rgba(0,0,0,0.15);
+}
+.autocomplete-item { padding:10px; cursor:pointer; }
+.autocomplete-item:hover { background:#3b82f6; color:white; }
+
+/* Popup */
+.popup { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(31,41,55,0.6); justify-content:center; align-items:center; z-index:1000; }
+.popup-content { background:#fff; padding:25px 30px; border-radius:16px; width:340px; box-shadow:0 8px 25px rgba(0,0,0,0.25); text-align:center; }
+.popup-content h3 { margin-top:0; color:#1f2937; font-weight:700; }
+.popup-content label { display:block; margin:12px 0; font-weight:500; cursor:pointer; }
+
+/* Step textarea & delete button */
+.step-textarea { height:80px; resize:vertical; margin-bottom:6px; width:100%; border-radius:10px; border:1px solid #ccc; padding:10px; background:#f0f9ff; }
+.delete-step { background:#f43f5e; color:white; font-weight:700; padding:6px 12px; border:none; border-radius:12px; cursor:pointer; margin-top:4px; width:100%; transition:all 0.3s; }
+.delete-step:hover { background:#be123c; transform:translateY(-2px); }
+
+/* Table layout adjustments */
+table th:nth-child(2), table td:nth-child(2) { width:75%; }
+table th:nth-child(3), table td:nth-child(3) { width:25%; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Assignment Step Splitter & Prompt Checker</h1>
+
+  <label for="classField">Class / Subject:</label>
+  <div class="autocomplete-suggestions">
+    <input type="text" id="classField" placeholder="e.g., New Venture Strategies" autocomplete="off">
+    <div id="autocompleteList" class="autocomplete-list" style="display:none;"></div>
+  </div>
+
+  <label for="assignment">Assignment description (with steps if provided):</label>
+  <textarea id="assignment" placeholder="Type your assignment here..."></textarea>
+
+  <!-- Buttons row 1: Generate / Reset -->
+  <div class="button-row">
+    <button id="generate" class="blue">Generate Steps & Prompt</button>
+    <button id="reset" class="white">Reset Assignment</button>
+  </div>
+
+  <h3>Generated Assignment Prompt</h3>
+  <textarea id="assignmentPrompt" class="prompt"></textarea>
+
+  <!-- Buttons row 2: Check / Copy -->
+  <div class="button-row">
+    <button id="checkPrompt" class="blue">Check Prompt (Framework Checklist)</button>
+    <button id="copyPrompt" class="white">Copy Prompt</button>
+  </div>
+
+  <table id="stepsTable">
+    <thead>
+      <tr>
+        <th>Step #</th>
+        <th>Step Description</th>
+        <th>Status / Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Checklist Popup -->
+<div id="popup" class="popup">
+  <div class="popup-content">
+    <h3>Prompt Engineering Checklist</h3>
+    <label><input type="checkbox" id="roleCheck"> 1. Chatbot Role Defined</label>
+    <label><input type="checkbox" id="purposeCheck"> 2. Purpose / Assignment Clear</label>
+    <label><input type="checkbox" id="contextCheck"> 3. Context & Constraints Provided</label>
+    <label><input type="checkbox" id="refineCheck"> 4. Ready to Refine Output Iteratively</label>
+    <button id="closePopup">Close</button>
+  </div>
+</div>
+
+<script>
+// JS logic (same as before)
+const assignmentInput = document.getElementById('assignment');
+const classInput = document.getElementById('classField');
+const autocompleteList = document.getElementById('autocompleteList');
+const generateBtn = document.getElementById('generate');
+const resetBtn = document.getElementById('reset');
+const stepsTableBody = document.querySelector('#stepsTable tbody');
+const assignmentPrompt = document.getElementById('assignmentPrompt');
+const checkPromptBtn = document.getElementById('checkPrompt');
+const copyPromptBtn = document.getElementById('copyPrompt');
+const popup = document.getElementById('popup');
+const closePopupBtn = document.getElementById('closePopup');
+
+let savedClasses = JSON.parse(localStorage.getItem('savedClasses') || '[]');
+window.onload = () => {
+  const savedAssignment = localStorage.getItem('assignment');
+  const savedSteps = JSON.parse(localStorage.getItem('steps') || '[]');
+  const savedPrompt = localStorage.getItem('assignmentPrompt') || '';
+  const savedClass = localStorage.getItem('classField') || '';
+  if (savedAssignment) assignmentInput.value = savedAssignment;
+  if (savedSteps.length) renderSteps(savedSteps);
+  if (savedPrompt) assignmentPrompt.value = savedPrompt;
+  if (savedClass) classInput.value = savedClass;
+};
+
+classInput.addEventListener('input', () => {
+  const query = classInput.value.trim().toLowerCase();
+  localStorage.setItem('classField', classInput.value);
+  if (!query) { autocompleteList.style.display='none'; return; }
+  const matches = savedClasses.filter(c => c.toLowerCase().includes(query));
+  autocompleteList.innerHTML = '';
+  if (matches.length>0) {
+    matches.forEach(c=>{
+      const div = document.createElement('div');
+      div.textContent=c;
+      div.className='autocomplete-item';
+      div.addEventListener('click',()=>{
+        classInput.value=c;
+        autocompleteList.style.display='none';
+      });
+      autocompleteList.appendChild(div);
+    });
+    autocompleteList.style.display='block';
+  } else autocompleteList.style.display='none';
+});
+
+document.addEventListener('click', e=>{ if(!classInput.contains(e.target)) autocompleteList.style.display='none'; });
+assignmentInput.addEventListener('input', ()=>{ localStorage.setItem('assignment', assignmentInput.value); });
+
+generateBtn.addEventListener('click', ()=>{
+  const text = assignmentInput.value.trim();
+  const classField = classInput.value.trim() || "this assignment";
+  if(!text) return alert('Please enter an assignment description.');
+  if(classField && !savedClasses.includes(classField)){
+    savedClasses.push(classField);
+    localStorage.setItem('savedClasses', JSON.stringify(savedClasses));
+  }
+  const steps = extractSteps(text);
+  localStorage.setItem('steps', JSON.stringify(steps));
+  renderSteps(steps);
+  const prompt = generateAssignmentPrompt(text, steps, classField);
+  assignmentPrompt.value = prompt;
+  localStorage.setItem('assignmentPrompt', prompt);
+});
+
+resetBtn.addEventListener('click', ()=>{
+  if(!confirm('Clear all steps, prompt, and class?')) return;
+  assignmentInput.value=''; classInput.value=''; assignmentPrompt.value=''; stepsTableBody.innerHTML='';
+  localStorage.removeItem('assignment'); localStorage.removeItem('steps'); localStorage.removeItem('assignmentPrompt'); localStorage.removeItem('classField');
+});
+
+function extractSteps(text){
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+  let detected = lines.filter(l=>/^[\-\*\d\.\)]\s+/.test(l) || /step\s*\d+/i.test(l) || /^(first|then|after|next)/i.test(l));
+  if(detected.length>0){ return detected.map((line,i)=>({number:i+1,description:line.replace(/^[\-\*\d\.\)]\s+/,''),status:'Not started'})); }
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(s=>s.length);
+  const stepCount = Math.min(Math.max(sentences.length,3),5);
+  const chunkSize = Math.ceil(sentences.length/stepCount);
+  const steps=[];
+  for(let i=0;i<stepCount;i++){ steps.push({number:i+1,description:sentences.slice(i*chunkSize,(i+1)*chunkSize).join(' '),status:'Not started'}); }
+  return steps;
+}
+
+function generateAssignmentPrompt(text,steps,classField){
+  const stepsList = steps.map(s=>`${s.number}. ${s.description}`).join('\n');
+  return `1. You are an expert in ${classField}.
+2. Your purpose is to guide me through this assignment.
+3. The assignment description is:
+"${text}"
+The steps are:
+${stepsList}
+Please provide guidance, questions, and tips. Do not complete the work for me.
+4. After reviewing AI output, I will refine instructions or add context as needed.`;
+}
+
+function renderSteps(steps){
+  stepsTableBody.innerHTML='';
+  steps.forEach((step,index)=>{
+    const tr=document.createElement('tr');
+    const tdNum=document.createElement('td'); tdNum.textContent=step.number;
+    const tdDesc=document.createElement('td');
+    const textarea=document.createElement('textarea'); textarea.value=step.description; textarea.className='step-textarea';
+    textarea.addEventListener('input',()=>{
+      step.description=textarea.value;
+      localStorage.setItem('steps',JSON.stringify(steps));
+      const classField=classInput.value.trim()||"this assignment";
+      const prompt=generateAssignmentPrompt(assignmentInput.value,steps,classField);
+      assignmentPrompt.value=prompt; localStorage.setItem('assignmentPrompt',prompt);
+    });
+    tdDesc.appendChild(textarea);
+    const tdStatus=document.createElement('td');
+    const select=document.createElement('select'); select.className='status-select';
+    ['Not started','In progress','Done'].forEach(opt=>{
+      const option=document.createElement('option'); option.value=opt; option.textContent=opt;
+      if(step.status===opt) option.selected=true; select.appendChild(option);
+    });
+    select.addEventListener('change',()=>{ step.status=select.value; localStorage.setItem('steps',JSON.stringify(steps)); tdStatus.className='status-'+step.status.replace(' ','\\ '); });
+    tdStatus.className='status-'+step.status.replace(' ','\\ ');
+    tdStatus.appendChild(select);
+    const delBtn = document.createElement('button'); delBtn.textContent='Delete'; delBtn.className='delete-step';
+    delBtn.addEventListener('click', ()=>{
+      if(confirm('Delete this step?')){ steps.splice(index,1); renderSteps(steps); localStorage.setItem('steps',JSON.stringify(steps));
+        const classField=classInput.value.trim()||"this assignment"; const prompt=generateAssignmentPrompt(assignmentInput.value,steps,classField); assignmentPrompt.value=prompt; localStorage.setItem('assignmentPrompt',prompt);
+      }
+    });
+    tdStatus.appendChild(delBtn);
+    tr.appendChild(tdNum); tr.appendChild(tdDesc); tr.appendChild(tdStatus); stepsTableBody.appendChild(tr);
+  });
+}
+
+checkPromptBtn.addEventListener('click',()=>{popup.style.display='flex';});
+closePopupBtn.addEventListener('click',()=>{popup.style.display='none';});
+copyPromptBtn.addEventListener('click',()=>{ assignmentPrompt.select(); document.execCommand('copy'); alert('Prompt copied to clipboard!'); });
+</script>
+
+</body>
+</html>
